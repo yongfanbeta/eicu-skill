@@ -1,0 +1,13 @@
+# Dependencies
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+desktop.ini
