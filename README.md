@@ -1,8 +1,8 @@
 # eicu-skill 🏥
 
-> OpenClaw Skill for querying the **eICU Collaborative Research Database 2.0**
+> AI Skill for querying the **eICU Collaborative Research Database 2.0**
 
-An [OpenClaw](https://github.com/openclaw/openclaw) skill that helps AI agents query the [eICU 2.0](https://eicu-crd.mit.edu/) critical care database. When a user asks for ICU patient data — vital signs, lab results, vasopressors, GCS, diagnoses — the agent reads the skill's reference docs and generates ready-to-run SQL or Python code tailored to the request.
+An AI agent skill that helps query the [eICU 2.0](https://eicu-crd.mit.edu/) critical care database. When a user asks for ICU patient data — vital signs, lab results, vasopressors, GCS, diagnoses — the agent reads the skill's reference docs and generates ready-to-run SQL or Python code tailored to the request.
 
 ## How It Works
 
@@ -31,19 +31,19 @@ Depending on the user's request, the agent will produce:
 
 ## Installation
 
-### Option 1: Via SkillHub (recommended)
+### Option 1: Clone into your AI agent's skills/knowledge directory
+
+```bash
+git clone https://github.com/yongfanbeta/eicu-skill.git <your-agent-skills-dir>/eicu-skill
+```
+
+### Option 2: Via SkillHub (for OpenClaw users)
 
 ```bash
 openclaw skill install eicu-skill
 ```
 
-### Option 2: Clone into skills directory
-
-```bash
-git clone https://github.com/yongfanbeta/eicu-skill.git ~/.qclaw/skills/eicu-skill
-```
-
-After installation, the skill is automatically available in your OpenClaw agent. No additional configuration needed.
+After installation, the skill is automatically available in your AI agent. No additional configuration needed.
 
 ## File Structure
 
