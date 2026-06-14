@@ -3,189 +3,189 @@ name: eicu-skill
 description: Query the eICU Collaborative Research Database 2.0. Generates SQL and Python code for extracting ICU data including vital signs, labs, GCS, vasopressors, blood gas, oxygenation, and diagnoses from PostgreSQL. Supports both direct SQL queries and Python (psycopg2) scripts.
 ---
 
-# eICU 2.0 数据提取技能
+# eICU 2.0 Data Extraction Skill
 
-> **⚠️ 重要更正（2026-05-20）**: 本文档已根据 **官方 SchemaSpy 文档** 和 **MIT-LCP/eicu-code 仓库** 进行彻底修订。
+> **⚠️ Important Correction (2026-05-20)**: This document has been thoroughly revised based on the **official SchemaSpy documentation** and **MIT-LCP/eicu-code repository**.
 >
-> **关键修正**：
-> - ✅ `vitalperiodic` 和 `vitalaperiodic` 表**都存在**（我之前错误地认为它们不存在）
-> - ✅ 字段名是 **驼色命名**（`heartrate` 不是 `heart_rate` 也不是 `heartRate`）
-> - ✅ 生命体征数据来自 **多个表**（`vitalperiodic`, `vitalaperiodic`, `nursecharting`）
+> **Key Corrections**:
+> - ✅ Both `vitalperiodic` and `vitalaperiodic` tables **exist** (I previously incorrectly believed they did not)
+> - ✅ Field names use **camelCase** (`heartrate` not `heart_rate` or `heartRate`)
+> - ✅ Vital signs data comes from **multiple tables** (`vitalperiodic`, `vitalaperiodic`, `nursecharting`)
 
-从 eICU Collaborative Research Database 2.0 中提取重症监护数据。提供 SQL 模板和 Python 代码，用户自行处理数据库连接。
+Extract critical care data from the eICU Collaborative Research Database 2.0. Provides SQL templates and Python code; users handle database connections independently.
 
-## 连接方式
+## Connection Method
 
-用户提供自己的 PostgreSQL 连接参数。本技能只提供查询代码。
+Users provide their own PostgreSQL connection parameters. This skill only provides query code.
 
-## 支持的查询类型
+## Supported Query Types
 
-| 查询类型 | 参考文件 |
-|---------|----------|
-| 患者基本信息 | [references/schema.md](references/schema.md) (patient 表) |
-| 生命体征（vitalperiodic） | [references/vital_signs.md](references/vital_signs.md) |
-| 生命体征（vitalaperiodic） | [references/vital_signs.md](references/vital_signs.md) |
-| 生命体征（nursecharting） | [references/vital_signs_nursecharting.md](references/vital_signs_nursecharting.md) |
-| 体格检查（GCS 等） | [references/gcs.md](references/gcs.md) |
-| 实验室检查 | [references/labs.md](references/labs.md) |
-| 血气分析 | [references/blood_gas.md](references/blood_gas.md) |
-| 尿量（Urine Output） | [references/urine_output.md](references/urine_output.md) |
-| 升压药（Vasopressors） | [references/vasopressors.md](references/vasopressors.md) |
-| 输液药物（Infusions） | [references/infusions.md](references/infusions.md) |
-| 体重（Weight） | [references/weight.md](references/weight.md) |
-| 氧合（Oxygenation） | [references/oxygenation.md](references/oxygenation.md) |
-| 诊断与 APACHE 分组 | [references/diagnoses.md](references/diagnoses.md) |
-| 药物（Medications） | [references/medications.md](references/medications.md) |
-| 数据库 Schema | [references/schema.md](references/schema.md) |
-| 常用查询模板 | [references/common_queries.md](references/common_queries.md) |
+| Query Type | Reference File |
+|-----------|----------|
+| Patient Basic Information | [references/schema.md](references/schema.md) (patient table) |
+| Vital Signs (vitalperiodic) | [references/vital_signs.md](references/vital_signs.md) |
+| Vital Signs (vitalaperiodic) | [references/vital_signs.md](references/vital_signs.md) |
+| Vital Signs (nursecharting) | [references/vital_signs_nursecharting.md](references/vital_signs_nursecharting.md) |
+| Physical Examination (GCS, etc.) | [references/gcs.md](references/gcs.md) |
+| Laboratory Tests | [references/labs.md](references/labs.md) |
+| Blood Gas Analysis | [references/blood_gas.md](references/blood_gas.md) |
+| Urine Output | [references/urine_output.md](references/urine_output.md) |
+| Vasopressors | [references/vasopressors.md](references/vasopressors.md) |
+| Infusions | [references/infusions.md](references/infusions.md) |
+| Weight | [references/weight.md](references/weight.md) |
+| Oxygenation | [references/oxygenation.md](references/oxygenation.md) |
+| Diagnoses and APACHE Grouping | [references/diagnoses.md](references/diagnoses.md) |
+| Medications | [references/medications.md](references/medications.md) |
+| Database Schema | [references/schema.md](references/schema.md) |
+| Common Query Templates | [references/common_queries.md](references/common_queries.md) |
 
-## 工作流程
+## Workflow
 
-1. 确认用户需要的查询类型
-2. 读取对应的 references 文件获取 SQL/Python 模板
-3. 根据用户具体需求调整查询条件
-4. 同时提供 SQL 和 Python 两种实现
+1. Confirm the query type needed by the user
+2. Read the corresponding references file to get the SQL/Python template
+3. Adjust query conditions based on the user's specific requirements
+4. Provide both SQL and Python implementations
 
-## eICU 与 MIMIC-IV 的关键区别
+## Key Differences Between eICU and MIMIC-IV
 
-| 特征 | eICU 2.0 | MIMIC-IV |
-|------|----------|----------|
-| **时间表示** | 偏移量（分钟） | 绝对时间戳 |
-| **生命体征来源** | `vitalperiodic` + `vitalaperiodic` + `nursecharting` | `chartevents` 表（通过 `d_items` 映射） |
-| **实验室检查** | `lab` 表（`labname` 直接是名称） | `labevents` 表（通过 `d_labitems` 映射） |
-| **患者ID** | `patientunitstayid` | `stay_id` |
-| **数据量** | 约 20 万患者 | 约 5 万患者 |
-| **字段名** | 驼色命名（如 `heartrate`） | 全小写，snake_case |
+| Feature | eICU 2.0 | MIMIC-IV |
+|--------|----------|----------|
+| **Time Representation** | Offsets (minutes) | Absolute timestamps |
+| **Vital Signs Source** | `vitalperiodic` + `vitalaperiodic` + `nursecharting` | `chartevents` table (mapped via `d_items`) |
+| **Laboratory Tests** | `lab` table (`labname` is the name directly) | `labevents` table (mapped via `d_labitems`) |
+| **Patient ID** | `patientunitstayid` | `stay_id` |
+| **Data Volume** | ~200,000 patients | ~50,000 patients |
+| **Field Naming** | CamelCase (e.g., `heartrate`) | All lowercase, snake_case |
 
-## 核心表结构（正确）
+## Core Table Structures (Correct)
 
-### 1. 患者基本信息 - `patient` 表
+### 1. Patient Basic Information - `patient` Table
 
 ```sql
 SELECT 
-    patientunitstayid  -- ICU 住院唯一标识
-  , uniquepid           -- 患者唯一标识
-  , patienthealthsystemstayid  -- 医院住院标识
-  , hospitalid          -- 医院ID
-  , unitvisitnumber     -- ICU 住院次数
-  , unittype            -- ICU 类型
-  , apacheadmissiondx   -- APACHE IV 入院诊断（重要！）
-  , age                 -- 年龄（截断处理：>89 岁显示为 91）
-  , gender              -- 性别（'Male'/'Female'）
-  , ethnicity           -- 种族
-  , hospitaladmitoffset  -- 医院入院偏移量（分钟）
-  , hospitaldischargeoffset  -- 医院出院偏移量（分钟）
-  , unitdischargeoffset  -- ICU 出院偏移量（分钟）
-  , hospitaldischargestatus  -- 医院出院状态（'Alive'/'Expired'）
-  , admissionheight     -- 入院身高（cm）
-  , admissionweight     -- 入院体重（kg）
-  , dischargeweight     -- 出院体重（kg）
+    patientunitstayid  -- ICU stay unique identifier
+  , uniquepid           -- Patient unique identifier
+  , patienthealthsystemstayid  -- Hospital stay identifier
+  , hospitalid          -- Hospital ID
+  , unitvisitnumber     -- ICU admission count
+  , unittype            -- ICU type
+  , apacheadmissiondx   -- APACHE IV admission diagnosis (important!)
+  , age                 -- Age (censored: >89 displayed as 91)
+  , gender              -- Gender ('Male'/'Female')
+  , ethnicity           -- Ethnicity
+  , hospitaladmitoffset  -- Hospital admission offset (minutes)
+  , hospitaldischargeoffset  -- Hospital discharge offset (minutes)
+  , unitdischargeoffset  -- ICU discharge offset (minutes)
+  , hospitaldischargestatus  -- Hospital discharge status ('Alive'/'Expired')
+  , admissionheight     -- Admission height (cm)
+  , admissionweight     -- Admission weight (kg)
+  , dischargeweight     -- Discharge weight (kg)
 FROM patient;
 ```
 
-**计算 ICU 住院时长（小时）**：
+**Calculating ICU Length of Stay (hours)**:
 ```sql
 ROUND(unitdischargeoffset/60) AS icu_los_hours
 ```
 
-### 2. 周期性生命体征 - `vitalperiodic` 表
+### 2. Periodic Vital Signs - `vitalperiodic` Table
 
-**表名**: `vitalperiodic`  
-**记录数**: 146,671,642 条  
-**说明**: 周期性生命体征测量，通常每 1-5 分钟记录一次。
+**Table Name**: `vitalperiodic`  
+**Record Count**: 146,671,642 rows  
+**Description**: Periodic vital sign measurements, typically recorded every 1-5 minutes.
 
 ```sql
 SELECT 
-    vitalperiodicid     -- 记录 ID (PK)
-  , patientunitstayid  -- 患者 ID (FK)
-  , observationoffset   -- 观察偏移量（分钟，相对于 ICU 入住）
-  , temperature         -- 体温 (°C)
-  , sao2               -- 血氧饱和度 (%)
-  , heartrate          -- 心率 (bpm)
-  , respiration        -- 呼吸频率 (breaths/min)
-  , cvp                -- 中心静脉压 (mmHg)
-  , etco2              -- 呼气末 CO2 (mmHg)
-  , systemicsystolic   -- 有创收缩压 (mmHg)
-  , systemicdiastolic  -- 有创舒张压 (mmHg)
-  , systemicmean       -- 有创平均动脉压 (mmHg)
-  , pasystolic         -- 肺动脉收缩压 (mmHg)
-  , padiastolic        -- 肺动脉舒张压 (mmHg)
-  , pamean             -- 肺动脉平均压 (mmHg)
-  , st1                -- ST 段导联 1 (mV)
-  , st2                -- ST 段导联 2 (mV)
-  , st3                -- ST 段导联 3 (mV)
-  , icp                -- 颅内压 (mmHg)
+    vitalperiodicid     -- Record ID (PK)
+  , patientunitstayid  -- Patient ID (FK)
+  , observationoffset   -- Observation offset (minutes, relative to ICU admission)
+  , temperature         -- Temperature (°C)
+  , sao2               -- Oxygen saturation (%)
+  , heartrate          -- Heart rate (bpm)
+  , respiration        -- Respiratory rate (breaths/min)
+  , cvp                -- Central venous pressure (mmHg)
+  , etco2              -- End-tidal CO2 (mmHg)
+  , systemicsystolic   -- Invasive systolic blood pressure (mmHg)
+  , systemicdiastolic  -- Invasive diastolic blood pressure (mmHg)
+  , systemicmean       -- Invasive mean arterial pressure (mmHg)
+  , pasystolic         -- Pulmonary artery systolic pressure (mmHg)
+  , padiastolic        -- Pulmonary artery diastolic pressure (mmHg)
+  , pamean             -- Pulmonary artery mean pressure (mmHg)
+  , st1                -- ST segment lead 1 (mV)
+  , st2                -- ST segment lead 2 (mV)
+  , st3                -- ST segment lead 3 (mV)
+  , icp                -- Intracranial pressure (mmHg)
 FROM vitalperiodic
-WHERE observationoffset >= 0 AND observationoffset < 1440  -- 入住后第一个 24 小时
+WHERE observationoffset >= 0 AND observationoffset < 1440  -- First 24 hours after admission
   AND patientunitstayid = %(patient_id)s
 ORDER BY observationoffset;
 ```
 
-**注意**:
-- 所有血压值均为有创测量（动脉导管）
-- `observationoffset` 是相对于 ICU 入住时间的分钟数
-- 添加合理性检查：`heartrate BETWEEN 25 AND 225`
+**Notes**:
+- All blood pressure values are invasive measurements (arterial line)
+- `observationoffset` is minutes relative to ICU admission time
+- Add plausibility checks: `heartrate BETWEEN 25 AND 225`
 
 ---
 
-### 3. 非周期性生命体征 - `vitalaperiodic` 表
+### 3. Aperiodic Vital Signs - `vitalaperiodic` Table
 
-**表名**: `vitalaperiodic`  
-**记录数**: 25,075,074 条  
-**说明**: 非周期性生命体征测量（通常是有创监测数据）。
+**Table Name**: `vitalaperiodic`  
+**Record Count**: 25,075,074 rows  
+**Description**: Aperiodic vital sign measurements (typically invasive monitoring data).
 
 ```sql
 SELECT 
-    vitalaperiodicid   -- 记录 ID (PK)
-  , patientunitstayid   -- 患者 ID (FK)
-  , observationoffset    -- 观察偏移量（分钟）
-  , noninvasivesystolic  -- 无创收缩压 (mmHg)
-  , noninvasivediastolic -- 无创舒张压 (mmHg)
-  , noninvasivemean     -- 无创平均动脉压 (mmHg)
-  , paop               -- 肺动脉闭塞压 (mmHg)
-  , cardiacoutput       -- 心输出量 (L/min)
-  , cardiacinput        -- 心脏指数 (L/min/m²)
-  , svr                -- 全身血管阻力 (dyn·s·cm⁻⁵)
-  , svri               -- 全身血管阻力指数 (dyn·s·cm⁻⁵/m²)
-  , pvr                -- 肺血管阻力 (dyn·s·cm⁻⁵)
-  , pvri               -- 肺血管阻力指数 (dyn·s·cm⁻⁵/m²)
+    vitalaperiodicid   -- Record ID (PK)
+  , patientunitstayid   -- Patient ID (FK)
+  , observationoffset    -- Observation offset (minutes)
+  , noninvasivesystolic  -- Non-invasive systolic blood pressure (mmHg)
+  , noninvasivediastolic -- Non-invasive diastolic blood pressure (mmHg)
+  , noninvasivemean     -- Non-invasive mean arterial pressure (mmHg)
+  , paop               -- Pulmonary artery occlusion pressure (mmHg)
+  , cardiacoutput       -- Cardiac output (L/min)
+  , cardiacinput        -- Cardiac index (L/min/m²)
+  , svr                -- Systemic vascular resistance (dyn·s·cm⁻⁵)
+  , svri               -- Systemic vascular resistance index (dyn·s·cm⁻⁵/m²)
+  , pvr                -- Pulmonary vascular resistance (dyn·s·cm⁻⁵)
+  , pvri               -- Pulmonary vascular resistance index (dyn·s·cm⁻⁵/m²)
 FROM vitalaperiodic
-WHERE observationoffset >= 0 AND observationoffset < 1440  -- 入住后第一个 24 小时
+WHERE observationoffset >= 0 AND observationoffset < 1440  -- First 24 hours after admission
   AND patientunitstayid = %(patient_id)s
 ORDER BY observationoffset;
 ```
 
-**注意**:
-- 此表主要包含有创血流动力学监测数据
-- `paop` (肺动脉闭塞压) 也称 PCWP (肺毛细血管楔压)
-- `svr`/`svri` 和 `pvr`/`pvri` 用于评估血管阻力
+**Notes**:
+- This table primarily contains invasive hemodynamic monitoring data
+- `paop` (Pulmonary Artery Occlusion Pressure) is also known as PCWP (Pulmonary Capillary Wedge Pressure)
+- `svr`/`svri` and `pvr`/`pvri` are used to assess vascular resistance
 
 ---
 
-### 4. 护理记录中的生命体征 - `nursecharting` 表
+### 4. Vital Signs from Nursing Charts - `nursecharting` Table
 
-**表名**: `nursecharting`  
-**记录数**: 151,604,232 条  
-**说明**: 护理图表记录（最详细的护理数据，包含生命体征、评分等）。
+**Table Name**: `nursecharting`  
+**Record Count**: 151,604,232 rows  
+**Description**: Nursing chart records (most detailed nursing data, including vital signs, scores, etc.).
 
 ```sql
 SELECT 
-    nursechartid              -- 记录 ID (PK)
-  , patientunitstayid        -- 患者 ID (FK)
-  , nursingchartoffset       -- 记录偏移时间（分钟）
-  , nursingchartentryoffset  -- 录入偏移时间（分钟）
-  , nursingchartcelltypecat  -- 大类（如 'Vital Signs'）
-  , nursingchartcelltypevallabel  -- 中类（如 'Heart Rate', 'Non-Invasive BP'）
-  , nursingchartcelltypevalname   -- 小类（如 'Heart Rate', 'Non-Invasive BP Systolic'）
-  , nursingchartvalue        -- 值（文本或数字）
+    nursechartid              -- Record ID (PK)
+  , patientunitstayid        -- Patient ID (FK)
+  , nursingchartoffset       -- Charting offset time (minutes)
+  , nursingchartentryoffset  -- Entry offset time (minutes)
+  , nursingchartcelltypecat  -- Major category (e.g., 'Vital Signs')
+  , nursingchartcelltypevallabel  -- Middle category (e.g., 'Heart Rate', 'Non-Invasive BP')
+  , nursingchartcelltypevalname   -- Minor category (e.g., 'Heart Rate', 'Non-Invasive BP Systolic')
+  , nursingchartvalue        -- Value (text or numeric)
 FROM nursecharting
 WHERE nursingchartcelltypecat IN ('Vital Signs', 'Scores', 'Other Vital Signs and Infusions')
   AND patientunitstayid = %(patient_id)s
-  AND nursingchartoffset >= 0 AND nursingchartoffset < 1440  -- 入住后第一个 24 小时
+  AND nursingchartoffset >= 0 AND nursingchartoffset < 1440  -- First 24 hours after admission
 ORDER BY nursingchartoffset;
 ```
 
-**提取生命体征的常用模式**（从 eicu-code 学习）：
+**Common Patterns for Extracting Vital Signs** (learned from eicu-code):
 
 ```sql
 SELECT 
@@ -199,7 +199,7 @@ SELECT
               ELSE NULL END) AS heartrate
   , AVG(CASE WHEN nursingchartcelltypevallabel = 'Non-Invasive BP'
                AND nursingchartcelltypevalname = 'Non-Invasive BP Systolic'
-               -- 类似处理其他生命体征...
+               -- similar handling for other vital signs...
               THEN CAST(nursingchartvalue AS NUMERIC)
               ELSE NULL END) AS nibp_systolic
 FROM nursecharting
@@ -212,20 +212,20 @@ ORDER BY patientunitstayid, nursingchartoffset;
 
 ---
 
-### 5. 实验室检查 - `lab` 表
+### 5. Laboratory Tests - `lab` Table
 
-**表名**: `lab`  
-**记录数**: 39,132,531 条  
-**说明**: 实验室检查结果。`labname` 直接是检查名称（**不需要 itemid 映射**）。
+**Table Name**: `lab`  
+**Record Count**: 39,132,531 rows  
+**Description**: Laboratory test results. `labname` is the test name directly (**no itemid mapping needed**).
 
 ```sql
 SELECT 
-    labid                   -- 记录 ID (PK)
-  , patientunitstayid       -- 患者 ID (FK)
-  , labresultoffset         -- 结果偏移时间（分钟）
-  , labresultrevisedoffset  -- 结果修订偏移时间（分钟）
-  , labname                 -- 检查名称（字符串）
-  , labresult               -- 检查结果（数值）
+    labid                   -- Record ID (PK)
+  , patientunitstayid       -- Patient ID (FK)
+  , labresultoffset         -- Result offset time (minutes)
+  , labresultrevisedoffset  -- Result revision offset time (minutes)
+  , labname                 -- Test name (string)
+  , labresult               -- Test result (numeric)
 FROM lab
 WHERE labname IN (
       'albumin'
@@ -254,44 +254,44 @@ WHERE labname IN (
   )
   AND labresult IS NOT NULL
   AND patientunitstayid = %(patient_id)s
-  AND labresultoffset >= 0 AND labresultoffset < 1440  -- 入住后第一个 24 小时
-  -- 添加合理性检查
+  AND labresultoffset >= 0 AND labresultoffset < 1440  -- First 24 hours after admission
+  -- Add plausibility checks
   AND (
         (labname = 'albumin' AND labresult >= 0.5 AND labresult <= 6.5)
     OR (labname = 'creatinine' AND labresult >= 0.1 AND labresult <= 28.28)
-    -- ... 其他检查的范围检查
+    -- ... plausibility checks for other tests
   )
 ORDER BY labresultoffset;
 ```
 
-**常用 labname 值**：
-- 白蛋白: `'albumin'`
-- 总胆红素: `'total bilirubin'`
-- 血尿素氮: `'BUN'`
-- 钙: `'calcium'`
-- 氯化物: `'chloride'`
-- 肌酐: `'creatinine'`
-- 血糖: `'bedside glucose'` 或 `'glucose'`
-- 碳酸氢盐: `'bicarbonate'` 或 `'Total CO2'`
-- 红细胞压积: `'Hct'`
-- 血红蛋白: `'Hgb'`
-- 国际标准化比值: `'PT - INR'`
-- 部分凝血活酶时间: `'PTT'`
-- 乳酸: `'lactate'`
-- 血小板: `'platelets x 1000'`
-- 钾: `'potassium'`
-- 钠: `'sodium'`
-- 白细胞: `'WBC x 1000'`
--  bands: `'-bands'`
-- 谷丙转氨酶: `'ALT (SGPT)'`
-- 谷草转氨酶: `'AST (SGOT)'`
-- 碱性磷酸酶: `'alkaline phos.'`
+**Common `labname` Values**:
+- Albumin: `'albumin'`
+- Total bilirubin: `'total bilirubin'`
+- Blood urea nitrogen: `'BUN'`
+- Calcium: `'calcium'`
+- Chloride: `'chloride'`
+- Creatinine: `'creatinine'`
+- Blood glucose: `'bedside glucose'` or `'glucose'`
+- Bicarbonate: `'bicarbonate'` or `'Total CO2'`
+- Hematocrit: `'Hct'`
+- Hemoglobin: `'Hgb'`
+- Prothrombin time INR: `'PT - INR'`
+- Partial thromboplastin time: `'PTT'`
+- Lactate: `'lactate'`
+- Platelets: `'platelets x 1000'`
+- Potassium: `'potassium'`
+- Sodium: `'sodium'`
+- White blood cells: `'WBC x 1000'`
+- Bands: `'-bands'`
+- Alanine aminotransferase: `'ALT (SGPT)'`
+- Aspartate aminotransferase: `'AST (SGOT)'`
+- Alkaline phosphatase: `'alkaline phos.'`
 
 ---
 
-### 6. 诊断 - `patient` 表（APACHE 诊断）
+### 6. Diagnoses - `patient` Table (APACHE Diagnoses)
 
-eICU 的诊断信息主要来自 `patient` 表的 `apacheadmissiondx` 字段（APACHE IV 入院诊断）。
+Diagnosis information in eICU primarily comes from the `apacheadmissiondx` field in the `patient` table (APACHE IV admission diagnosis).
 
 ```sql
 SELECT 
@@ -305,86 +305,86 @@ FROM patient
 ORDER BY patientunitstayid;
 ```
 
-**APACHE 诊断分组**（从 eicu-code 学习）：
+**APACHE Diagnosis Grouping** (learned from eicu-code):
 
-eicu-code 提供了 `diagnosis/apache-groups.sql`，将 `apacheadmissiondx` 分组为：
-- `'ACS'` (急性冠脉综合征)
-- `'ChestPainUnknown'` (不明原因胸痛)
-- `'CHF'` (充血性心力衰竭)
-- `'CardiacArrest'` (心脏骤停)
-- `'CABG'` (冠脉搭桥)
-- `'ValveDz'` (心脏瓣膜病)
-- `'PNA'` (肺炎)
-- `'RespMedOther'` (呼吸系统其他疾病)
-- `'Asthma-Emphys'` (哮喘/肺气肿)
-- `'GIBleed'` (消化道出血)
-- `'GIObstruction'` (肠梗阻)
-- `'CVA'` (脑卒中)
-- `'Neuro'` (神经系统疾病)
-- `'Coma'` (昏迷)
-- `'Overdose'` (药物过量)
-- `'Sepsis'` (脓毒症)
-- `'ARF'` (急性肾衰竭)
-- `'DKA'` (糖尿病酮症酸中毒)
-- `'Trauma'` (创伤)
-- `'Other'` (其他)
+eicu-code provides `diagnosis/apache-groups.sql`, which groups `apacheadmissiondx` into:
+- `'ACS'` (Acute Coronary Syndrome)
+- `'ChestPainUnknown'` (Chest pain of unknown etiology)
+- `'CHF'` (Congestive Heart Failure)
+- `'CardiacArrest'` (Cardiac Arrest)
+- `'CABG'` (Coronary Artery Bypass Graft)
+- `'ValveDz'` (Valvular Heart Disease)
+- `'PNA'` (Pneumonia)
+- `'RespMedOther'` (Other Respiratory Diseases)
+- `'Asthma-Emphys'` (Asthma/Emphysema)
+- `'GIBleed'` (Gastrointestinal Bleeding)
+- `'GIObstruction'` (Intestinal Obstruction)
+- `'CVA'` (Cerebrovascular Accident)
+- `'Neuro'` (Neurological Diseases)
+- `'Coma'` (Coma)
+- `'Overdose'` (Drug Overdose)
+- `'Sepsis'` (Sepsis)
+- `'ARF'` (Acute Renal Failure)
+- `'DKA'` (Diabetic Ketoacidosis)
+- `'Trauma'` (Trauma)
+- `'Other'` (Other)
 
 ---
 
-## 时间表示（重要！）
+## Time Representation (Important!)
 
-eICU 使用 **偏移量（分钟）** 表示时间，所有偏移量相对于 **ICU 入住时间**：
+eICU uses **offsets (minutes)** to represent time, with all offsets relative to **ICU admission time**:
 
-- `offset = 0`: ICU 入住时刻
-- `offset = 60`: 入住后 60 分钟（1 小时）
-- `offset = 1440`: 入住后 1440 分钟（24 小时）
-- **负值**: 表示入住前的记录（如有）
+- `offset = 0`: ICU admission moment
+- `offset = 60`: 60 minutes after admission (1 hour)
+- `offset = 1440`: 1440 minutes after admission (24 hours)
+- **Negative values**: Records before admission (if any)
 
-**关键时间字段**：
-- `hospitaladmitoffset` - 医院入院偏移量
-- `hospitaldischargeoffset` - 医院出院偏移量
-- `unitdischargeoffset` - ICU 出院偏移量（**用于计算 ICU LOS**）
-- `observationoffset` - 生命体征记录偏移时间
-- `nursingchartoffset` - 护理记录偏移时间
-- `labresultoffset` - 实验室结果偏移时间
-- `diagnosisoffset` - 诊断偏移时间
+**Key Time Fields**:
+- `hospitaladmitoffset` - Hospital admission offset
+- `hospitaldischargeoffset` - Hospital discharge offset
+- `unitdischargeoffset` - ICU discharge offset (**used for calculating ICU LOS**)
+- `observationoffset` - Vital signs record offset time
+- `nursingchartoffset` - Nursing chart offset time
+- `labresultoffset` - Laboratory result offset time
+- `diagnosisoffset` - Diagnosis offset time
 
-**计算 ICU 住院时长（小时）**：
+**Calculating ICU Length of Stay (hours)**:
 ```sql
 ROUND(unitdischargeoffset/60) AS icu_los_hours
 ```
 
 ---
 
-## 数据质量与性能优化
+## Data Quality and Performance Optimization
 
-### 数据质量
+### Data Quality
 
-- **缺失值多**: eICU 的数据完整性低于 MIMIC-IV
-- **异常值**: 查询时务必加合理性检查（如 `heartrate BETWEEN 25 AND 225`）
-- **文本值**: 部分生命体征值是文本（如 '80s' 表示 '80多岁'），需要清洗
+- **High Missing Rates**: Data completeness in eICU is lower than in MIMIC-IV
+- **Outliers**: Always add plausibility checks in queries (e.g., `heartrate BETWEEN 25 AND 225`)
+- **Text Values**: Some vital sign values are text (e.g., '80s' means 'in their 80s'), requiring cleaning
 
-### 性能优化
+### Performance Optimization
 
-**大表**（根据 eicu-code 统计）：
-- `nursecharting`: 约 1.51 亿条记录
-- `lab`: 约 3913 万条记录
-- `vitalperiodic`: 约 1.46 亿条记录
-- `vitalaperiodic`: 约 2507 万条记录
-- `patient`: 约 20 万条记录
+**Large Tables** (from eicu-code statistics):
+- `nursecharting`: ~151 million rows
+- `lab`: ~39.13 million rows
+- `vitalperiodic`: ~146.67 million rows
+- `vitalaperiodic`: ~25.07 million rows
+- `patient`: ~200,000 rows
 
-**优化建议**：
-1. **使用 `patientunitstayid` 过滤**（最重要！）
-2. **限定时间范围**（`observationoffset BETWEEN 0 AND 1440`）
-3. **添加 `LIMIT` 子句**（测试时）
-4. **使用 `EXPLAIN` 分析查询计划**
-5. **考虑创建物化视图**（`CREATE MATERIALIZED VIEW`）
+**Optimization Tips**:
+1. **Filter by `patientunitstayid`** (most important!)
+2. **Limit time range** (`observationoffset BETWEEN 0 AND 1440`)
+3. **Add `LIMIT` clause** (during testing)
+4. **Use `EXPLAIN` to analyze query plans**
+5. **Consider creating materialized views** (`CREATE MATERIALIZED VIEW`)
 
 ---
 
-## 常用查询场景
+## Common Query Scenarios
 
-### 1. 提取患者基本信息
+### 1. Extract Patient Basic Information
 
 ```sql
 SELECT 
@@ -402,7 +402,7 @@ FROM eicu_crd.patient pt
 ORDER BY pt.patientunitstayid;
 ```
 
-### 2. 提取 ICU 住院详细信息（物化视图）
+### 2. Extract ICU Stay Details (Materialized View)
 
 ```sql
 DROP MATERIALIZED VIEW IF EXISTS icustay_detail CASCADE;
@@ -443,7 +443,7 @@ CREATE MATERIALIZED VIEW icustay_detail AS (
 );
 ```
 
-### 3. 提取生命体征（Pivot 格式）
+### 3. Extract Vital Signs (Pivot Format)
 
 ```sql
 DROP TABLE IF EXISTS pivoted_vital CASCADE;
@@ -469,7 +469,7 @@ WITH nc AS (
             THEN CAST(nursingchartvalue AS NUMERIC)
         ELSE NULL END
       AS nibp_systolic
-    -- 类似处理其他生命体征...
+    -- similar handling for other vital signs...
   FROM nursecharting
   WHERE nursingchartcelltypecat IN ('Vital Signs', 'Scores', 'Other Vital Signs and Infusions')
 )
@@ -479,7 +479,7 @@ SELECT
   , nursingchartentryoffset AS entryoffset
   , AVG(CASE WHEN heartrate BETWEEN 25 AND 225 THEN heartrate ELSE NULL END) AS heartrate
   , AVG(CASE WHEN nibp_systolic BETWEEN 25 AND 250 THEN nibp_systolic ELSE NULL END) AS nibp_systolic
-  -- ... 其他生命体征
+  -- ... other vital signs
 FROM nc
 WHERE heartrate IS NOT NULL
    OR nibp_systolic IS NOT NULL
@@ -488,7 +488,7 @@ GROUP BY patientunitstayid, nursingchartoffset, nursingchartentryoffset
 ORDER BY patientunitstayid, nursingchartoffset, nursingchartentryoffset;
 ```
 
-### 4. 提取实验室检查（Pivot 格式）
+### 4. Extract Laboratory Tests (Pivot Format)
 
 ```sql
 DROP TABLE IF EXISTS pivoted_lab CASCADE;
@@ -510,7 +510,7 @@ WITH vw0 AS (
   GROUP BY patientunitstayid, labname, labresultoffset, labresultrevisedoffset
   HAVING COUNT(DISTINCT labresult) <= 1
 ),
--- 获取最后一次修订的结果
+-- Get the last revised result
 vw1 AS (
   SELECT
       lab.patientunitstayid
@@ -531,7 +531,7 @@ vw1 AS (
   WHERE
       (lab.labname = 'albumin' AND lab.labresult >= 0.5 AND lab.labresult <= 6.5)
     OR (lab.labname = 'creatinine' AND lab.labresult >= 0.1 AND lab.labresult <= 28.28)
-    -- ... 其他检查的范围检查
+    -- ... plausibility checks for other tests
 )
 SELECT
     patientunitstayid
@@ -540,7 +540,7 @@ SELECT
   , MAX(CASE WHEN labname = 'total bilirubin' THEN labresult ELSE NULL END) AS bilirubin
   , MAX(CASE WHEN labname = 'BUN' THEN labresult ELSE NULL END) AS bun
   , MAX(CASE WHEN labname = 'creatinine' THEN labresult ELSE NULL END) AS creatinine
-  -- ... 其他检查
+  -- ... other tests
 FROM vw1
 WHERE rn = 1
 GROUP BY patientunitstayid, labresultoffset
@@ -549,15 +549,15 @@ ORDER BY patientunitstayid, labresultoffset;
 
 ---
 
-## Python 代码示例
+## Python Code Examples
 
-### 使用 psycopg2 查询 eICU 数据
+### Using psycopg2 to Query eICU Data
 
 ```python
 import psycopg2
 import pandas as pd
 
-# 数据库连接参数
+# Database connection parameters
 conn_params = {
     'host': 'localhost',
     'port': 5432,
@@ -566,14 +566,14 @@ conn_params = {
     'password': 'your_password'
 }
 
-# 查询生命体征数据
+# Query vital signs data
 def get_vital_signs(patient_id, hour_window=24):
     """
-    提取指定患者在 ICU 入住后前 N 小时的生命体征数据
+    Extract vital signs data for a specified patient in the first N hours after ICU admission.
     
     Args:
-        patient_id: ICU 住院 ID (patientunitstayid)
-        hour_window: 时间窗口（小时），默认 24 小时
+        patient_id: ICU stay ID (patientunitstayid)
+        hour_window: Time window in hours, default 24 hours
     """
     query = """
         SELECT 
@@ -593,7 +593,7 @@ def get_vital_signs(patient_id, hour_window=24):
         ORDER BY vp.observationoffset;
     """
     
-    # 转换小时为分钟
+    # Convert hours to minutes
     max_offset = hour_window * 60
     
     with psycopg2.connect(**conn_params) as conn:
@@ -605,10 +605,10 @@ def get_vital_signs(patient_id, hour_window=24):
     
     return df
 
-# 查询实验室检查数据
+# Query laboratory test data
 def get_lab_results(patient_id, hour_window=24):
     """
-    提取指定患者在 ICU 入住后前 N 小时的实验室检查数据
+    Extract laboratory test data for a specified patient in the first N hours after ICU admission.
     """
     query = """
         SELECT 
@@ -639,17 +639,17 @@ def get_lab_results(patient_id, hour_window=24):
     
     return df
 
-# 使用示例
+# Usage example
 if __name__ == '__main__':
-    # 替换为实际的 patientunitstayid
+    # Replace with actual patientunitstayid
     patient_id = 123456
     
-    # 获取生命体征
+    # Get vital signs
     vitals_df = get_vital_signs(patient_id, hour_window=24)
     print(f"Got {len(vitals_df)} vital signs records")
     print(vitals_df.head())
     
-    # 获取实验室检查
+    # Get laboratory tests
     labs_df = get_lab_results(patient_id, hour_window=24)
     print(f"\nGot {len(labs_df)} lab results records")
     print(labs_df.head())
@@ -657,15 +657,15 @@ if __name__ == '__main__':
 
 ---
 
-## 参考链接
+## Reference Links
 
-- **官方 SchemaSpy 文档**: https://lcp.mit.edu/eicu-schema-spy/index.html
-- **eICU 数据介绍**: https://eicu-crd.mit.edu/
-- **访问申请**: https://physionet.org/content/eicu-crd/2.0/
-- **eICU-code 官方仓库**: https://github.com/MIT-LCP/eicu-code
-- **MIMIC-code 官方仓库**: https://github.com/MIT-LCP/mimic-code
+- **Official SchemaSpy Documentation**: https://lcp.mit.edu/eicu-schema-spy/index.html
+- **eICU Data Introduction**: https://eicu-crd.mit.edu/
+- **Access Application**: https://physionet.org/content/eicu-crd/2.0/
+- **eICU-code Official Repository**: https://github.com/MIT-LCP/eicu-code
+- **MIMIC-code Official Repository**: https://github.com/MIT-LCP/mimic-code
 
 ---
 
-**最后更新**: 2026-05-20  
-**更新人**: 悟空（基于官方 SchemaSpy 文档和 MIT-LCP/eicu-code 仓库彻底修订）
+**Last Updated**: 2026-05-20  
+**Updated By**: Wukong (thoroughly revised based on official SchemaSpy documentation and MIT-LCP/eicu-code repository)
