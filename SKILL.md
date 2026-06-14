@@ -1,6 +1,6 @@
 ---
 name: eicu-skill
-description: 从 eICU Collaborative Research Database 2.0 中提取重症监护数据的专用技能。当用户提到 eICU、eICU 2.0、查询 eICU 数据、提取 ICU 患者数据（生命体征/实验室检查/诊断/合并症）且涉及 eICU 数据库时使用此技能。支持 SQL 和 Python (psycopg2) 两种查询方式，数据通过 PostgreSQL 连接。
+description: Query the eICU Collaborative Research Database 2.0. Generates SQL and Python code for extracting ICU data including vital signs, labs, GCS, vasopressors, blood gas, oxygenation, and diagnoses from PostgreSQL. Supports both direct SQL queries and Python (psycopg2) scripts.
 ---
 
 # eICU 2.0 数据提取技能
