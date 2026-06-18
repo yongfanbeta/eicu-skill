@@ -1,0 +1,16 @@
+{
+  "name": "eicu-skill",
+  "version": "1.0.0",
+  "description": "Query the eICU Collaborative Research Database 2.0. Generates SQL and Python code for extracting ICU data (vital signs, labs, GCS, diagnoses) from PostgreSQL.",
+  "author": "yongfanbeta",
+  "repository": "https://github.com/yongfanbeta/eicu-skill",
+  "main": "SKILL.md",
+  "keywords": ["medical", "database", "postgresql", "icu", "eicu", "health-care"],
+  "engines": {
+    "codex": ">=1.0.0"
+  },
+  "installation": {
+    "type": "github",
+    "url": "https://github.com/yongfanbeta/eicu-skill"
+  }
+}

@@ -19,16 +19,54 @@ openclaw skill install https://clawhub.ai/skills/eicu-skill
 openclaw skill install ./eicu-skill.skill
 ```
 
-### Claude Code / Cursor / Windsurf 用户
+### Claude Code 用户
+
+**方法1：从 GitHub 直接安装（推荐）**
+
+在 Claude Code 中输入：
+```
+/plugin install https://github.com/yongfanbeta/eicu-skill
+```
+
+**方法2：通过插件市场安装**
 
 ```bash
-# 下载 .skill 文件
-curl -L -o eicu-skill.skill \
-  https://github.com/yongfanbeta/eicu-skill/releases/download/v1.0.0/eicu-skill.skill
+# 添加插件市场
+/plugin marketplace add yongfanbeta/eicu-skill-marketplace
 
-# 安装（假设你的智能体支持 openclaw CLI）
-openclaw skill install eicu-skill.skill
+# 安装插件
+/plugin install eicu-skill@eicu-skill-marketplace
 ```
+
+### Codex 用户
+
+**Codex App：**
+1. 点击侧边栏的 **Plugins**
+2. 搜索 `eicu-skill`
+3. 点击 **+** 安装
+
+**Codex CLI：**
+```bash
+# 搜索插件
+/plugins
+
+# 搜索 eicu-skill
+eicu-skill
+
+# 选择 Install Plugin
+```
+
+### Cursor 用户
+
+在 Cursor Agent 聊天中输入：
+```bash
+/add-plugin eicu-skill
+```
+
+或者：
+1. 打开插件市场
+2. 搜索 `eicu-skill`
+3. 点击安装
 
 ### 手动安装（所有智能体通用）
 

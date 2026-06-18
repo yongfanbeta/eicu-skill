@@ -1,7 +1,9 @@
 ---
 name: eicu-skill
-description: Query the eICU Collaborative Research Database 2.0. Generates SQL and Python code for extracting ICU data including vital signs, labs, GCS, vasopressors, blood gas, oxygenation, and diagnoses from PostgreSQL. Supports both direct SQL queries and Python (psycopg2) scripts.
+description: "Query the eICU Collaborative Research Database 2.0 / 查询 eICU 协作研究数据库 2.0。当用户提到 eICU、eICU-CRD、eICU 数据、查询 eICU 数据、提取 ICU 数据、重症数据库查询、eICU 数据分析、ICU 协作研究数据库查询时使用。Generates SQL and Python code for extracting ICU data (vital signs, labs, GCS, diagnoses) from PostgreSQL. Supports both direct SQL queries and Python (psycopg2) scripts. 需用户自行提供 PostgreSQL 连接参数。Do NOT use for MIMIC data (use mimic-skill instead).
 ---
+
+# eICU 2.0 Data Extraction Skill
 
 # eICU 2.0 Data Extraction Skill
 
