@@ -21,21 +21,24 @@ openclaw skill install ./eicu-skill.skill
 
 ### Claude Code 用户
 
-**方法1：从 GitHub 直接安装（推荐）**
+**方法1：从统一市场安装（推荐）**
+
+```bash
+# 添加插件市场（包含 mimic-skill 和 eicu-skill）
+/plugin marketplace add yongfanbeta/mimic-eicu-marketplace
+
+# 安装 eicu-skill
+/plugin install eicu-skill@mimic-eicu-marketplace
+
+# 重载插件系统
+/reload-plugins
+```
+
+**方法2：从 GitHub 直接安装**
 
 在 Claude Code 中输入：
 ```
 /plugin install https://github.com/yongfanbeta/eicu-skill
-```
-
-**方法2：通过插件市场安装**
-
-```bash
-# 添加插件市场
-/plugin marketplace add yongfanbeta/eicu-skill-marketplace
-
-# 安装插件
-/plugin install eicu-skill@eicu-skill-marketplace
 ```
 
 ### Codex 用户
