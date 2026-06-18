@@ -43,13 +43,13 @@ ORDER BY d.diagnosispriority, d.diagnosisoffset;
 
 ```sql
 -- 查看既往史的所有不重复描述
-SELECT DISTINCT pasthistorystring, COUNT(*) AS cnt
+SELECT DISTINCT pasthistoryvalue, COUNT(*) AS cnt
 FROM pasthistory
-GROUP BY pasthistorystring
+GROUP BY pasthistoryvalue
 ORDER BY cnt DESC
 LIMIT 100;
 
--- 常见的 pasthistorystring 示例:
+-- 常见的 pasthistoryvalue 示例:
 -- "renal dialysis", "diabetes", "COPD", "congestive heart failure",
 -- "liver disease", "immunocompromised", "vascular disease", etc.
 
@@ -57,7 +57,7 @@ LIMIT 100;
 SELECT 
     ph.patientunitstayid,
     ph.pasthistoryoffset,
-    ph.pasthistorystring,
+    ph.pasthistoryvalue,
     ph.icd9code
 FROM pasthistory ph
 WHERE ph.patientunitstayid = %(patient_id)s
@@ -65,7 +65,7 @@ ORDER BY ph.pasthistoryoffset;
 ```
 
 **字段说明**:
-- `pasthistorystring`: 既往史描述（主要字段）
+- `pasthistoryvalue`: 既往史描述（主要字段）
 - `pasthistoryoffset`: 记录时间偏移量（分钟）
 - `icd9code`: ICD-9 编码（可能为 NULL）
 
@@ -91,56 +91,56 @@ ORDER BY d.patientunitstayid;
 -- 糖尿病
 SELECT DISTINCT ph.patientunitstayid
 FROM pasthistory ph
-WHERE ph.pasthistorystring ILIKE '%diabetes%'
-   OR ph.pasthistorystring ILIKE '%dm%'
+WHERE ph.pasthistoryvalue ILIKE '%diabetes%'
+   OR ph.pasthistoryvalue ILIKE '%dm%'
 
 UNION ALL
 
 -- 慢性肺病（COPD）
 SELECT DISTINCT ph.patientunitstayid
 FROM pasthistory ph
-WHERE ph.pasthistorystring ILIKE '%copd%'
-   OR ph.pasthistorystring ILIKE '%chronic obstructive%'
-   OR ph.pasthistorystring ILIKE '%pulmonary disease%'
+WHERE ph.pasthistoryvalue ILIKE '%copd%'
+   OR ph.pasthistoryvalue ILIKE '%chronic obstructive%'
+   OR ph.pasthistoryvalue ILIKE '%pulmonary disease%'
 
 UNION ALL
 
 -- 肾病（透析）
 SELECT DISTINCT ph.patientunitstayid
 FROM pasthistory ph
-WHERE ph.pasthistorystring ILIKE '%renal%'
-   OR ph.pasthistorystring ILIKE '%dialysis%'
-   OR ph.pasthistorystring ILIKE '%esrd%'
+WHERE ph.pasthistoryvalue ILIKE '%renal%'
+   OR ph.pasthistoryvalue ILIKE '%dialysis%'
+   OR ph.pasthistoryvalue ILIKE '%esrd%'
 
 UNION ALL
 
 -- 心脏疾病
 SELECT DISTINCT ph.patientunitstayid
 FROM pasthistory ph
-WHERE ph.pasthistorystring ILIKE '%heart failure%'
-   OR ph.pasthistorystring ILIKE '%chf%'
-   OR ph.pasthistorystring ILIKE '%cardiomyopathy%'
-   OR ph.pasthistorystring ILIKE '%cad%'
-   OR ph.pasthistorystring ILIKE '%coronary%'
+WHERE ph.pasthistoryvalue ILIKE '%heart failure%'
+   OR ph.pasthistoryvalue ILIKE '%chf%'
+   OR ph.pasthistoryvalue ILIKE '%cardiomyopathy%'
+   OR ph.pasthistoryvalue ILIKE '%cad%'
+   OR ph.pasthistoryvalue ILIKE '%coronary%'
 
 UNION ALL
 
 -- 肝病
 SELECT DISTINCT ph.patientunitstayid
 FROM pasthistory ph
-WHERE ph.pasthistorystring ILIKE '%liver%'
-   OR ph.pasthistorystring ILIKE '%hepatic%'
-   OR ph.pasthistorystring ILIKE '%cirrhosis%'
+WHERE ph.pasthistoryvalue ILIKE '%liver%'
+   OR ph.pasthistoryvalue ILIKE '%hepatic%'
+   OR ph.pasthistoryvalue ILIKE '%cirrhosis%'
 
 UNION ALL
 
 -- 免疫低下
 SELECT DISTINCT ph.patientunitstayid
 FROM pasthistory ph
-WHERE ph.pasthistorystring ILIKE '%immunocompromised%'
-   OR ph.pasthistorystring ILIKE '%immunosuppress%'
-   OR ph.pasthistorystring ILIKE '%hiv%'
-   OR ph.pasthistorystring ILIKE '%aids%';
+WHERE ph.pasthistoryvalue ILIKE '%immunocompromised%'
+   OR ph.pasthistoryvalue ILIKE '%immunosuppress%'
+   OR ph.pasthistoryvalue ILIKE '%hiv%'
+   OR ph.pasthistoryvalue ILIKE '%aids%';
 ```
 
 ### 3. 筛选脓毒症患者（基于诊断 + 微生物培养）
@@ -274,7 +274,7 @@ def get_past_history(patient_id):
     query = """
         SELECT 
             pasthistoryoffset,
-            pasthistorystring,
+            pasthistoryvalue,
             icd9code
         FROM pasthistory
         WHERE patientunitstayid = %(pid)s
@@ -361,7 +361,7 @@ def find_patients_by_past_history(keywords):
     # ⚠️ 安全风险：此实现使用字符串插值，仅用于示例
     # 生产环境应使用参数化查询或预定义关键词白名单
     where_clauses = " OR ".join([
-        f"ph.pasthistorystring ILIKE '%{kw}%'" for kw in keywords
+        f"ph.pasthistoryvalue ILIKE '%{kw}%'" for kw in keywords
     ])
     
     query = f"""
@@ -375,7 +375,7 @@ def find_patients_by_past_history(keywords):
 
     # 更安全的实现示例（使用参数化查询）:
     # def find_patients_by_past_history_safe(keywords):
-    #     where_clauses = " OR ".join(["ph.pasthistorystring ILIKE %s" for _ in keywords])
+    #     where_clauses = " OR ".join(["ph.pasthistoryvalue ILIKE %s" for _ in keywords])
     #     
     #     query = f"""
     #         SELECT DISTINCT ph.patientunitstayid
@@ -404,21 +404,21 @@ def get_comorbidities(patient_ids=None):
     query = """
         SELECT 
             ph.patientunitstayid,
-            MAX(CASE WHEN ph.pasthistorystring ILIKE '%diabetes%' 
+            MAX(CASE WHEN ph.pasthistoryvalue ILIKE '%diabetes%' 
                      THEN 1 ELSE 0 END) AS comorbidity_diabetes,
-            MAX(CASE WHEN ph.pasthistorystring ILIKE '%copd%' 
-                     OR ph.pasthistorystring ILIKE '%chronic obstructive%' 
+            MAX(CASE WHEN ph.pasthistoryvalue ILIKE '%copd%' 
+                     OR ph.pasthistoryvalue ILIKE '%chronic obstructive%' 
                      THEN 1 ELSE 0 END) AS comorbidity_copd,
-            MAX(CASE WHEN ph.pasthistorystring ILIKE '%renal%' 
-                     OR ph.pasthistorystring ILIKE '%dialysis%' 
+            MAX(CASE WHEN ph.pasthistoryvalue ILIKE '%renal%' 
+                     OR ph.pasthistoryvalue ILIKE '%dialysis%' 
                      THEN 1 ELSE 0 END) AS comorbidity_renal,
-            MAX(CASE WHEN ph.pasthistorystring ILIKE '%heart failure%' 
-                     OR ph.pasthistorystring ILIKE '%chf%' 
+            MAX(CASE WHEN ph.pasthistoryvalue ILIKE '%heart failure%' 
+                     OR ph.pasthistoryvalue ILIKE '%chf%' 
                      THEN 1 ELSE 0 END) AS comorbidity_chf,
-            MAX(CASE WHEN ph.pasthistorystring ILIKE '%liver%' 
-                     OR ph.pasthistorystring ILIKE '%hepatic%' 
+            MAX(CASE WHEN ph.pasthistoryvalue ILIKE '%liver%' 
+                     OR ph.pasthistoryvalue ILIKE '%hepatic%' 
                      THEN 1 ELSE 0 END) AS comorbidity_liver,
-            MAX(CASE WHEN ph.pasthistorystring ILIKE '%immunocompromised%' 
+            MAX(CASE WHEN ph.pasthistoryvalue ILIKE '%immunocompromised%' 
                      THEN 1 ELSE 0 END) AS comorbidity_immunocompromised
         FROM pasthistory ph
         GROUP BY ph.patientunitstayid
@@ -439,17 +439,17 @@ def get_comorbidities(patient_ids=None):
                 )
                 SELECT 
                     ph.patientunitstayid,
-                    MAX(CASE WHEN ph.pasthistorystring ILIKE '%diabetes%' 
+                    MAX(CASE WHEN ph.pasthistoryvalue ILIKE '%diabetes%' 
                              THEN 1 ELSE 0 END) AS comorbidity_diabetes,
-                    MAX(CASE WHEN ph.pasthistorystring ILIKE '%copd%' 
+                    MAX(CASE WHEN ph.pasthistoryvalue ILIKE '%copd%' 
                              THEN 1 ELSE 0 END) AS comorbidity_copd,
-                    MAX(CASE WHEN ph.pasthistorystring ILIKE '%renal%' 
+                    MAX(CASE WHEN ph.pasthistoryvalue ILIKE '%renal%' 
                              THEN 1 ELSE 0 END) AS comorbidity_renal,
-                    MAX(CASE WHEN ph.pasthistorystring ILIKE '%heart failure%' 
+                    MAX(CASE WHEN ph.pasthistoryvalue ILIKE '%heart failure%' 
                              THEN 1 ELSE 0 END) AS comorbidity_chf,
-                    MAX(CASE WHEN ph.pasthistorystring ILIKE '%liver%' 
+                    MAX(CASE WHEN ph.pasthistoryvalue ILIKE '%liver%' 
                              THEN 1 ELSE 0 END) AS comorbidity_liver,
-                    MAX(CASE WHEN ph.pasthistorystring ILIKE '%immunocompromised%' 
+                    MAX(CASE WHEN ph.pasthistoryvalue ILIKE '%immunocompromised%' 
                              THEN 1 ELSE 0 END) AS comorbidity_immunocompromised
                 FROM pasthistory ph, target_patients tp
                 WHERE ph.patientunitstayid = tp.pid
@@ -523,12 +523,12 @@ WHERE d.icd9code ILIKE '%99592%'  -- ICD-9 for sepsis
 ### 3. 既往史结构更规范
 
 - **pastHistory 表**: 比 MIMIC-IV 的 `diagnoses_icd` 更易于识别合并症
-- **pasthistorystring**: 直接包含疾病名称（如 "diabetes", "COPD"）
+- **pasthistoryvalue**: 直接包含疾病名称（如 "diabetes", "COPD"）
 - **建议**: 结合 `diagnosis` 和 `pasthistory` 表识别合并症
 
 ### 4. 模糊匹配必不可少
 
-- `diagnosisstring` 和 `pasthistorystring` 的具体措辞因站点而异
+- `diagnosisstring` 和 `pasthistoryvalue` 的具体措辞因站点而异
 - **建议工作流程**:
   1. 先查询 `SELECT DISTINCT diagnosisstring FROM diagnosis WHERE diagnosisstring ILIKE '%keyword%'`
   2. 根据实际值调整匹配模式
@@ -570,7 +570,7 @@ SELECT
     COUNT(DISTINCT ph.patientunitstayid) AS num_patients,
     (COUNT(DISTINCT ph.patientunitstayid) * 100.0 / (SELECT COUNT(*) FROM patient)) AS prevalence_pct
 FROM pasthistory ph
-WHERE ph.pasthistorystring ILIKE '%diabetes%'
+WHERE ph.pasthistoryvalue ILIKE '%diabetes%'
 
 UNION ALL
 
@@ -579,8 +579,8 @@ SELECT
     COUNT(DISTINCT ph.patientunitstayid) AS num_patients,
     (COUNT(DISTINCT ph.patientunitstayid) * 100.0 / (SELECT COUNT(*) FROM patient)) AS prevalence_pct
 FROM pasthistory ph
-WHERE ph.pasthistorystring ILIKE '%copd%'
-   OR ph.pasthistorystring ILIKE '%chronic obstructive%'
+WHERE ph.pasthistoryvalue ILIKE '%copd%'
+   OR ph.pasthistoryvalue ILIKE '%chronic obstructive%'
 
 ORDER BY num_patients DESC;
 ```
@@ -591,10 +591,10 @@ ORDER BY num_patients DESC;
 SELECT 
     p.patientunitstayid,
     -- 肝病（胆红素升高）
-    MAX(CASE WHEN ph.pasthistorystring ILIKE '%liver%' 
+    MAX(CASE WHEN ph.pasthistoryvalue ILIKE '%liver%' 
              THEN 1 ELSE 0 END) AS has_liver_disease,
     -- 凝血病（血小板降低）
-    MAX(CASE WHEN ph.pasthistorystring ILIKE '%coagulopathy%' 
+    MAX(CASE WHEN ph.pasthistoryvalue ILIKE '%coagulopathy%' 
              THEN 1 ELSE 0 END) AS has_coagulopathy,
     -- 心血管病（低血压）
     MAX(CASE WHEN d.diagnosisstring ILIKE '%shock%' 

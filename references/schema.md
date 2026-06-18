@@ -703,7 +703,7 @@ APACHE IV 评分结果。
 | pasthistoryid | int4 | 记录 ID (PK) |
 | patientunitstayid | int4 | 患者 ID (FK) |
 | pasthistoryoffset | int4 | 记录偏移量（分钟）|
-| pasthistorystring | varchar | 既往史描述 |
+| pasthistoryvalue | varchar | 既往史描述 |
 | icd9code | varchar | ICD-9 编码（如有）|
 
 ---

@@ -233,9 +233,9 @@ ORDER BY m.drugstartoffset;
 
 ```sql
 -- 查看所有不重复的既往史描述（前 100 个）
-SELECT DISTINCT pasthistorystring, COUNT(*) AS cnt
+SELECT DISTINCT pasthistoryvalue, COUNT(*) AS cnt
 FROM pasthistory
-GROUP BY pasthistorystring
+GROUP BY pasthistoryvalue
 ORDER BY cnt DESC
 LIMIT 100;
 ```
@@ -246,7 +246,7 @@ LIMIT 100;
 SELECT
     ph.patientunitstayid,
     ph.pasthistoryoffset,
-    ph.pasthistorystring,
+    ph.pasthistoryvalue,
     ph.icd9code
 FROM pasthistory ph
 WHERE ph.patientunitstayid = %(patient_id)s
@@ -260,7 +260,7 @@ SELECT
     'diabetes' AS comorbidity,
     COUNT(DISTINCT ph.patientunitstayid) AS num_patients
 FROM pasthistory ph
-WHERE ph.pasthistorystring ILIKE '%diabetes%'
+WHERE ph.pasthistoryvalue ILIKE '%diabetes%'
 
 UNION ALL
 
@@ -268,8 +268,8 @@ SELECT
     'copd' AS comorbidity,
     COUNT(DISTINCT ph.patientunitstayid) AS num_patients
 FROM pasthistory ph
-WHERE ph.pasthistorystring ILIKE '%copd%'
-   OR ph.pasthistorystring ILIKE '%chronic obstructive%'
+WHERE ph.pasthistoryvalue ILIKE '%copd%'
+   OR ph.pasthistoryvalue ILIKE '%chronic obstructive%'
 
 UNION ALL
 
@@ -277,8 +277,8 @@ SELECT
     'renal_dialysis' AS comorbidity,
     COUNT(DISTINCT ph.patientunitstayid) AS num_patients
 FROM pasthistory ph
-WHERE ph.pasthistorystring ILIKE '%dialysis%'
-   OR ph.pasthistorystring ILIKE '%renal%'
+WHERE ph.pasthistoryvalue ILIKE '%dialysis%'
+   OR ph.pasthistoryvalue ILIKE '%renal%'
 
 UNION ALL
 
@@ -286,8 +286,8 @@ SELECT
     'heart_failure' AS comorbidity,
     COUNT(DISTINCT ph.patientunitstayid) AS num_patients
 FROM pasthistory ph
-WHERE ph.pasthistorystring ILIKE '%heart failure%'
-   OR ph.pasthistorystring ILIKE '%chf%'
+WHERE ph.pasthistoryvalue ILIKE '%heart failure%'
+   OR ph.pasthistoryvalue ILIKE '%chf%'
 
 ORDER BY num_patients DESC;
 ```

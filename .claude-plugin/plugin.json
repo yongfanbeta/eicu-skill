@@ -1,6 +1,6 @@
 {
   "name": "eicu-skill",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Query the eICU Collaborative Research Database 2.0 / 查询 eICU 协作研究数据库 2.0。Generates SQL and Python code for extracting ICU data (vital signs, labs, GCS, diagnoses) from PostgreSQL.",
   "author": {
     "name": "yongfanbeta",
