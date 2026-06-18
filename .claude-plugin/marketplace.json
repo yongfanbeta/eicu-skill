@@ -1,0 +1,23 @@
+{
+  "name": "eicu-skill",
+  "owner": {
+    "name": "yongfanbeta",
+    "email": "yongfanbeta@gmail.com"
+  },
+  "metadata": {
+    "description": "eICU Collaborative Research Database Query Skill for Claude Code",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "eicu-skill",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/yongfanbeta/eicu-skill.git"
+      },
+      "description": "Query the eICU Collaborative Research Database 2.0. Generates SQL and Python code for extracting ICU data (vital signs, labs, GCS, diagnoses) from PostgreSQL.",
+      "version": "1.0.0",
+      "strict": true
+    }
+  ]
+}
